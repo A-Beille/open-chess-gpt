@@ -764,6 +764,8 @@
                         else playSound("/sounds/move.mp3")
                         if(chess.game_over() || move.includes("#")){
                             playSound("/sounds/game-end.mp3")
+                            isGameEnded = true
+                            makeResult("b", "échec et mat (autoproclamé)")
                         }
                 moves.push(move)
                 if(!m){
@@ -779,10 +781,6 @@
                         piece = "k"
                     }
                     const closestOccurence = findClosestOccurence(squareDest, piece)
-                    if(move.includes("#")){
-                        isGameEnded = true
-                        makeResult("b", "échec et mat (autoproclamé)")
-                    }
                     if(closestOccurence){
                         movePiece(closestOccurence, squareDest, "teleport")
                         setTimeout(()=>{
