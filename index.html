@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Chess GPT - Jouez aux échecs contre une IA de traitement de texte</title>
+    <script src="https://cdn.jsdelivr.net/gh/A-Beille/twui-integration@main/deps/chess.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <link rel="stylesheet" href="/style.css">
+    <link rel="stylesheet" href="/bg.css">
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+    <div class="bg">
+    </div>
+    <div id="promotion" hidden>
+        <img src="/img/chesspieces/wQ.png">
+        <img src="/img/chesspieces/wR.png">
+        <img src="/img/chesspieces/wB.png">
+        <img src="/img/chesspieces/wN.png">
+    </div>
+    <div id="result" hidden>
+        <h2 id="winner_result">Les Noirs ont gagné</h2>
+        <p id="win_reason">par échec et mat</p>
+        <button class="global_button" style="margin-top: 25px;" onclick="document.getElementById('result').hidden = true">Fermer</button>
+        <div class="minor_button" id="copy_moves" style="margin-top: 10px;">
+            <img src="/img/icons/export.svg">
+        </div>
+    </div>
+    <div id="home">
+        <h1>Les &Eacute;checs VS ChatGPT</h1>
+        <h2>Coups illégaux possibles</h2>
+        <button class="global_button" onclick="this.disabled = true;start()">C'est parti !</button>
+    </div>
+    <div id="board" hidden>
+        <div class="row" id="row_8">
+            <div id="square_a8" class="square sw">
+                <span class="coordinates_num">8</span>
+            </div>
+            <div id="square_b8" class="square sb"></div>
+            <div id="square_c8" class="square sw"></div>
+            <div id="square_d8" class="square sb"></div>
+            <div id="square_e8" class="square sw"></div>
+            <div id="square_f8" class="square sb"></div>
+            <div id="square_g8" class="square sw"></div>
+            <div id="square_h8" class="square sb"></div>
+        </div>
+        <div class="row" id="row_7">
+            <div id="square_a7" class="square sb">
+                <span class="coordinates_num">7</span>
+            </div>
+            <div id="square_b7" class="square sw"></div>
+            <div id="square_c7" class="square sb"></div>
+            <div id="square_d7" class="square sw"></div>
+            <div id="square_e7" class="square sb"></div>
+            <div id="square_f7" class="square sw"></div>
+            <div id="square_g7" class="square sb"></div>
+            <div id="square_h7" class="square sw"></div>
+        </div>
+        <div class="row" id="row_6">
+            <div id="square_a6" class="square sw">
+                <span class="coordinates_num">6</span>
+            </div>
+            <div id="square_b6" class="square sb"></div>
+            <div id="square_c6" class="square sw"></div>
+            <div id="square_d6" class="square sb"></div>
+            <div id="square_e6" class="square sw"></div>
+            <div id="square_f6" class="square sb"></div>
+            <div id="square_g6" class="square sw"></div>
+            <div id="square_h6" class="square sb"></div>
+        </div>
+        <div class="row" id="row_5">
+            <div id="square_a5" class="square sb">
+                <span class="coordinates_num">5</span>
+            </div>
+            <div id="square_b5" class="square sw"></div>
+            <div id="square_c5" class="square sb"></div>
+            <div id="square_d5" class="square sw"></div>
+            <div id="square_e5" class="square sb"></div>
+            <div id="square_f5" class="square sw"></div>
+            <div id="square_g5" class="square sb"></div>
+            <div id="square_h5" class="square sw"></div>
+        </div>
+        <div class="row" id="row_4">
+            <div id="square_a4" class="square sw">
+                <span class="coordinates_num">4</span>
+            </div>
+            <div id="square_b4" class="square sb"></div>
+            <div id="square_c4" class="square sw"></div>
+            <div id="square_d4" class="square sb"></div>
+            <div id="square_e4" class="square sw"></div>
+            <div id="square_f4" class="square sb"></div>
+            <div id="square_g4" class="square sw"></div>
+            <div id="square_h4" class="square sb"></div>
+        </div>
+        <div class="row" id="row_3">
+            <div id="square_a3" class="square sb">
+                <span class="coordinates_num">3</span>
+            </div>
+            <div id="square_b3" class="square sw"></div>
+            <div id="square_c3" class="square sb"></div>
+            <div id="square_d3" class="square sw"></div>
+            <div id="square_e3" class="square sb"></div>
+            <div id="square_f3" class="square sw"></div>
+            <div id="square_g3" class="square sb"></div>
+            <div id="square_h3" class="square sw"></div>
+        </div>
+        <div class="row" id="row_2">
+            <div id="square_a2" class="square sw">
+                <span class="coordinates_num">2</span>
+            </div>
+            <div id="square_b2" class="square sb"></div>
+            <div id="square_c2" class="square sw"></div>
+            <div id="square_d2" class="square sb"></div>
+            <div id="square_e2" class="square sw"></div>
+            <div id="square_f2" class="square sb"></div>
+            <div id="square_g2" class="square sw"></div>
+            <div id="square_h2" class="square sb"></div>
+        </div>
+        <div class="row" id="row_1">
+            <div id="square_a1" class="square sb">
+                <span class="coordinates_num">1</span>
+                <span class="coordinates_let">a</span>
+            </div>
+            <div id="square_b1" class="square sw">
+                <span class="coordinates_let">b</span>
+            </div>
+            <div id="square_c1" class="square sb">
+                <span class="coordinates_let">c</span>
+            </div>
+            <div id="square_d1" class="square sw">
+                <span class="coordinates_let">d</span>
+            </div>
+            <div id="square_e1" class="square sb">
+                <span class="coordinates_let">e</span>
+            </div>
+            <div id="square_f1" class="square sw">
+                <span class="coordinates_let">f</span>
+            </div>
+            <div id="square_g1" class="square sb">
+                <span class="coordinates_let">g</span>
+            </div>
+            <div id="square_h1" class="square sw">
+                <span class="coordinates_let">h</span>
+            </div>
+        </div>
+    </div> 
+    <script>
+    // FUNCTIONS & DEFINITIONS
+    
+    let position = {}
+    let moves = []
+    const isAIPlaying = true // If disabled, the game works like any chess game
+    let isGameEnded = false
+    var socket = io();
+    const chess = new Chess();
+    function start(){
+        const home = document.getElementById("home")
+        const board = document.getElementById("board")
+        home.animate([
+            {top: "50%", opacity: 1},
+            {top: "100%", opacity: 0}
+        ],{
+            duration: 1000,
+            fill:"forwards",
+            easing: "ease-in-out",
+        }
+        
+    )
+    setTimeout(()=>{
+    board.style.top = 0
+    makeBoard()
+    board.hidden = false
+    board.animate([
+            {top: "0%", opacity: 0},
+            {top: "50%", opacity: 1}
+        ],{
+            duration: 1000,
+            fill:"forwards",
+            easing: "ease-in-out",
+        }
+        
+    )
+},500)
+    }
+    function playSound(sound){
+        const audio = document.createElement("audio")
+        audio.hidden = true
+        audio.src = sound
+        document.body.appendChild(audio)
+        audio.play()
+        audio.onended = function(){
+            audio.remove()
+        }
+    }
+    function flashSquare(square){
+        const s = document.getElementById(`square_${square}`)
+        if(s.className.includes("selected")){
+            s.classList.remove("selected")
+        }
+        for(let i = 0; i < 5; i++){
+            setTimeout(()=>{
+            s.classList.add("selected")
+            setTimeout(()=>{
+                s.classList.remove("selected")
+            },i*200)
+        }, i*200)
+        }
+    }
+    function makeResult(result, reason){
+        const resultDiv = document.getElementById("result")
+        const winnerResult = document.getElementById("winner_result")
+        const winReason = document.getElementById("win_reason")
+        if(result == "draw"){
+            winnerResult.innerText = "Nulle"
+        }
+        else{
+            winnerResult.innerText = `${result == "w" ? "Vous avez gagné !" : "Les Noirs ont gagné"}`
+        }
+        winReason.innerHTML = `par ${reason}`
+        resultDiv.style.top = 0
+        resultDiv.animate([
+            {top : 0},
+            {top : "50%"}
+        ],        {
+            duration: 200,
+            fill:"forwards",
+            easing: "ease-in-out",
+        })
+        resultDiv.hidden = false
+
+    }
+    function findOccurencesOfPiece(p){
+        const squares = []
+        for(let i = 0; i < document.getElementsByClassName("square").length; i++){
+            const square = document.getElementsByClassName("square").item(i)
+            const piece = square.querySelector(".piece")
+            if(piece){
+                if(piece.dataset.pieceType === p){
+                    squares.push(square.id.split("_")[1])
+                }
+            }
+        }
+        return squares
+    }
+    function isKingOnBoard(color){
+        let searching = (color == "w") ? "K" : "k"
+        for(let i = 0; i < document.getElementsByClassName("square").length; i++){
+            const square = document.getElementsByClassName("square").item(i)
+            const piece = square.querySelector(".piece")
+            if(piece){
+                if(piece.dataset.pieceType === searching){
+                    return true
+                }
+            }
+        }
+        return false
+    }
+    function findClosestOccurence(square, p){
+        const occurences = findOccurencesOfPiece(p)
+        const squaresToNum = {
+  "a1": [1, 1], "b1": [2, 1], "c1": [3, 1], "d1": [4, 1], "e1": [5, 1], "f1": [6, 1], "g1": [7, 1], "h1": [8, 1],
+  "a2": [1, 2], "b2": [2, 2], "c2": [3, 2], "d2": [4, 2], "e2": [5, 2], "f2": [6, 2], "g2": [7, 2], "h2": [8, 2],
+  "a3": [1, 3], "b3": [2, 3], "c3": [3, 3], "d3": [4, 3], "e3": [5, 3], "f3": [6, 3], "g3": [7, 3], "h3": [8, 3],
+  "a4": [1, 4], "b4": [2, 4], "c4": [3, 4], "d4": [4, 4], "e4": [5, 4], "f4": [6, 4], "g4": [7, 4], "h4": [8, 4],
+  "a5": [1, 5], "b5": [2, 5], "c5": [3, 5], "d5": [4, 5], "e5": [5, 5], "f5": [6, 5], "g5": [7, 5], "h5": [8, 5],
+  "a6": [1, 6], "b6": [2, 6], "c6": [3, 6], "d6": [4, 6], "e6": [5, 6], "f6": [6, 6], "g6": [7, 6], "h6": [8, 6],
+  "a7": [1, 7], "b7": [2, 7], "c7": [3, 7], "d7": [4, 7], "e7": [5, 7], "f7": [6, 7], "g7": [7, 7], "h7": [8, 7],
+  "a8": [1, 8], "b8": [2, 8], "c8": [3, 8], "d8": [4, 8], "e8": [5, 8], "f8": [6, 8], "g8": [7, 8], "h8": [8, 8]
+}
+
+        const squareOriginalNum = squaresToNum[square]
+        let closestSquare
+        let lowestDifference = Infinity
+        if(!occurences) return undefined;
+            occurences.forEach((occ)=>{
+                const numOcc = squaresToNum[occ]
+                const difference = Math.sqrt((numOcc[0] - squareOriginalNum[0])**2 + (numOcc[1] - squareOriginalNum[1])**2)
+                if(difference < lowestDifference){
+                    closestSquare = occ
+                    lowestDifference = difference
+                }
+            })
+            return closestSquare
+
+    }
+    function makePromotion(from, square){
+        const s = document.getElementById(`square_${square}`)
+        const promotion = document.getElementById("promotion")
+        if(s){
+            const pieces = [
+                "wQ",
+                "wR",
+                "wB",
+                "wN"
+            ]
+            const rect = s.getBoundingClientRect()
+            promotion.style.transform = ""
+            promotion.style.transform = `translate(${rect.left - 50}px, 0)`
+            while(promotion.children.length > 0){
+            for(let i = 0; i < promotion.children.length; i++){
+                promotion.children.item(i).remove()
+            }
+        }
+        promotion.hidden = false
+            for(i in pieces){
+                const img = document.createElement("img")
+                img.src = `/img/chesspieces/${pieces[i]}.png`
+                promotion.appendChild(img)
+                img.onclick = function(){
+                    const piece = img.src.split("chesspieces/")[1].split(".")[0]
+                    let move = chess.move({from : from, to: square, promotion: piece.split("")[1].toLowerCase()})
+                    moves.push(move.san)
+                    destroyPiece(square)
+                    createPiece(square, piece)
+                    playSound("/sounds/promote.mp3")
+                    promotion.hidden = true
+                    setTimeout(()=>{
+                        if(isAIPlaying && !isGameEnded) socket.emit(`movePlayed`,socket.id, moves.toString())
+                    },500)
+                }
+            }
+        }
+    }
+    // CREATING EXPLOSION
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    class Particle {
+        constructor(x, y, color, type) {
+            this.x = x;
+            this.y = y;
+            this.size = Math.random() * 5 + 2;
+            this.speedX = (Math.random() - 0.5) * 8;
+            this.speedY = (Math.random() - 0.5) * 8;
+            this.alpha = 1;
+            this.color = color;
+            this.type = type;
+            this.angle = Math.random() * Math.PI * 2;
+        }
+
+        update() {
+            this.x += this.speedX;
+            this.y += this.speedY;
+            this.alpha -= 0.02; 
+        }
+
+        draw() {
+            ctx.globalAlpha = this.alpha;
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+
+            ctx.beginPath();
+            if (this.type === "circle") {
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (this.type === "line") {
+                ctx.moveTo(this.x, this.y);
+                ctx.lineTo(this.x + Math.cos(this.angle) * 10, this.y + Math.sin(this.angle) * 10);
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            } else if (this.type === "star") {
+                this.drawStar();
+            }
+            ctx.closePath();
+        }
+
+        drawStar() {
+            ctx.save();
+            ctx.translate(this.x, this.y);
+            ctx.rotate(this.angle);
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                let angle = (Math.PI * 2 / 5) * i;
+                let x = Math.cos(angle) * this.size * 2;
+                let y = Math.sin(angle) * this.size * 2;
+                ctx.lineTo(x, y);
+            }
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    let particles = [];
+    function showInfo(info){
+        const div = document.createElement("div")
+        div.className = "info_popup"
+        const p = document.createElement("p")
+        p.innerHTML = info
+        div.appendChild(p)
+        document.body.appendChild(div)
+        setTimeout(()=>{
+            div.remove()
+        },3000)
+    }
+    function showLegalMoves(piece_square){
+        if((chess.turn() == "b" && isAIPlaying) || isGameEnded) return;
+        const square = document.getElementById(`square_${piece_square}`)
+        const piece = square.querySelector(".piece")
+        if(piece){
+            const legalMoves = chess.moves({verbose: true}).filter(move => move.from == piece_square)
+            legalMoves.forEach((move)=>{
+                drawPoint(move.from, move.to)
+            })
+        }
+    }
+    function createExplosion(square) {
+        canvas.style.zIndex = 10
+        let s = document.getElementById(`square_${square}`)
+        let x = s.getBoundingClientRect().left + 30
+        let y = s.getBoundingClientRect().top +30
+        const colors = ["cyan", "magenta", "yellow", "blue", "lime", "red"];
+        const types = ["circle", "line", "star"];
+        for (let i = 0; i < 30; i++) {
+            let type = types[Math.floor(Math.random() * types.length)];
+            particles.push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)], type));
+        }
+    }
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        particles.forEach((particle, index) => {
+            particle.update();
+            particle.draw();
+            if (particle.alpha <= 0) {
+                particles.splice(index, 1);
+                canvas.style.zIndex = 3
+            }
+        });
+        requestAnimationFrame(animate);
+    }
+
+    animate();
+
+    window.addEventListener("resize", () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+    function movesToPGN(moves = []){
+        let pgn = "1."
+        let currMove = 1
+        for(let i in moves){
+            const move = moves[i]
+            if(i % 2 == 0 && i > 0){
+                currMove++
+                pgn += `\n${currMove}.`
+            }
+            pgn += `${move} `
+        }
+        return pgn
+    }
+    function destroyPiece(square, explode){
+    const piece = document.getElementById(`square_${square}`).querySelector(".piece");
+    
+    // Ensure there's a piece to move
+    if (piece){
+        piece.remove()
+        if(explode) createExplosion(square)
+        position[square] = null
+    }
+    }
+    function boardToFen(turn, castle){
+        let fen = ""
+        let pieceTo
+        turn = (turn == "w") ? "b" : "w"
+        for(let i = 0; i < document.getElementsByClassName("row").length; i++){
+            const row = document.getElementsByClassName("row").item(i)
+            let counterEmpty = 0
+            for(let i = 0; i < row.querySelectorAll(".square").length; i++){
+                const square = row.querySelectorAll(".square").item(i)
+                const piece = square.querySelector(".piece")
+                if(!piece){
+                    counterEmpty++
+                }
+                else{
+                    fen += `${counterEmpty != 0 ? counterEmpty : ""}${piece.dataset.pieceType}`
+                    counterEmpty = 0
+                }
+            }
+            fen += `${counterEmpty != 0 ? counterEmpty : ""}${row.id == "row_1" ? "" : "/"}`
+        }
+        return `${fen} ${turn} ${castle} - 0 1`
+    }
+    function fenToPos(fen = `rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1`){
+        let finalPosition = {}
+        const letters = [
+            "a",
+            "b",
+            "c",
+            "d",
+            "e",
+            "f",
+            "g",
+            "h",
+        ]
+        let currentLetter = 0 // Current letter of the square
+        let currentNumber = 9 // Current number of the square
+        fen.split("/").forEach((element)=>{
+            currentNumber-=1
+            currentLetter = 0
+            for(let i = 0; i < 8; i++){
+                let analyzedElement = element[i]
+                if(!isNaN(analyzedElement)){
+                    i += analyzedElement
+                    currentLetter += analyzedElement-1
+                }
+                else{
+                    if(analyzedElement){
+                    finalPosition[`${letters[currentLetter]}${currentNumber}`] = (analyzedElement.toLowerCase() === analyzedElement) ? `b${analyzedElement.toUpperCase()}` : `w${analyzedElement.toUpperCase()}`
+                    // Stocking the pieces according to their color (bc ofc color differenciates us)
+                    }
+                    currentLetter++
+                }
+            }
+        })
+        return finalPosition
+    }
+
+    function movePiece(fromSquareId, toSquareId, transition, noKingCheck) {
+    // Get the source and destination squares
+    const fromSquare = document.getElementById(`square_${fromSquareId}`);
+    const toSquare = document.getElementById(`square_${toSquareId}`);
+    
+    // Ensure both squares exist
+    if (!fromSquare || !toSquare) {
+        console.error("Invalid square ID(s)");
+        return;
+    }
+    
+    // Get the piece inside the source square
+    const piece = fromSquare.querySelector(".piece");
+    let arrivalPiece
+    // Ensure there's a piece to move
+    if (!piece) {
+        console.error("No piece found in the source square");
+        return;
+    }
+    if(toSquare.querySelector(".piece")){
+        arrivalPiece = toSquare.querySelector(".piece")
+    }
+    // Get the destination position relative to the board
+    const board = document.getElementById("board");
+    const boardRect = board.getBoundingClientRect();
+    const fromRect = fromSquare.getBoundingClientRect();
+    const toRect = toSquare.getBoundingClientRect();
+    
+    // Compute movement offsets
+    const deltaX = toRect.left - fromRect.left - 30;
+    const deltaY = toRect.top - fromRect.top - 30;
+    if(transition == "teleport"){
+    // Teleportation
+    playSound("/sounds/teleport.mp3")
+    piece.style.transition = "height 0.3s ease-out";
+    piece.style.height = `0`;
+    }
+    else{
+    // Apply animation
+    piece.style.transition = "transform 0.3s ease-out";
+    piece.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+    }
+    // Wait for the animation to complete before re-parenting the piece
+    setTimeout(() => {
+        if(transition == "teleport"){
+                toSquare.appendChild(piece); // Move piece to the new square
+                piece.style.height = "0%"
+                piece.style.transition = "height 0.3s ease-out";
+                setTimeout(()=>{
+                piece.style.height = "100%"
+                setTimeout(()=>{
+                    piece.style.transition = "none";
+                },300)
+            },1)
+        }
+        else{
+        piece.style.transition = "none"; // Remove transition to prevent glitch
+        piece.style.transform = "translate(-50%, -50%)"; // Reset transform
+        toSquare.appendChild(piece); // Move piece to the new square
+        }
+        if(fromSquareId == "e1" && toSquareId == "g1" && piece.src.includes("wK")){ // Castle kingside W
+            movePiece("h1", "f1", null, true)
+        }
+        if(fromSquareId == "e1" && toSquareId == "c1" && piece.src.includes("wK")){ // Castle quenside W
+            movePiece("a1", "d1", null, true)
+        }
+        if(fromSquareId == "e8" && toSquareId == "g8" && piece.src.includes("bK")){ // Castle kingside B
+            movePiece("h8", "f8", null, true)
+        }
+        if(fromSquareId == "e8" && toSquareId == "c8" && piece.src.includes("bK")){ // Castle quenside B
+            movePiece("a8", "d8", null, true)
+        }
+        piece.onclick = function(){
+                    setTimeout(()=>{
+                        showLegalMoves(`${toSquareId}`)
+                    },10)
+            }
+        if(arrivalPiece){
+            let noRemove = false
+            if(arrivalPiece.src.split("chesspieces/")[1].split("")[0] == piece.src.split("chesspieces/")[1].split("")[0]){
+                if(arrivalPiece.dataset.pieceType == piece.dataset.pieceType){
+                    noRemove = true
+                    flashSquare(toSquareId)
+                }
+                else {
+                    playSound("/sounds/teleport.mp3")
+                    createExplosion(toSquareId)}
+            }
+            if(!noRemove) arrivalPiece.remove()
+        }
+        if(!noKingCheck){
+            if(!isKingOnBoard("w")){
+                isGameEnded = true
+                makeResult("b", "capture du roi")
+                playSound("/sounds/game-end.mp3")
+            }
+            else if(!isKingOnBoard("b")){
+                isGameEnded = true
+                makeResult("w", "capture du roi")
+                playSound("/sounds/game-end.mp3")
+            }
+        }
+        if(chess.game_over()){
+            isGameEnded = true
+        }
+        if(chess.in_checkmate()){
+            makeResult((chess.turn() == "w") ? "b" : "w", "échec et mat")
+        }
+        if(chess.in_stalemate()){
+            makeResult("draw", "pat")
+        }
+        else if(chess.in_threefold_repetition()){
+            makeResult("draw", "répétition")
+        }
+        else{
+            if(chess.in_draw()){
+                makeResult("draw", "la règle des 50 coups")  
+            }
+        }
+    }, 300); // Match timeout with transition duration
+}
+    function drawPoint(from, square){
+        const s = document.getElementById(`square_${square}`)
+        const point = document.createElement("div")
+        point.className = "point"
+        point.dataset.move = `${from}-${square}`
+        s.appendChild(point)
+    }
+    function removePoints(){
+        while(document.getElementsByClassName("point").length > 0){
+            for(let i = 0; i < document.getElementsByClassName("point").length; i++){
+                document.getElementsByClassName("point").item(i).remove()
+            }
+        }
+    }
+    function createPiece(square, piece, explosion){
+        const s = document.getElementById(`square_${square}`)
+        const p = document.createElement("img")
+        let arrivalPiece
+        if(s.querySelector(".piece")){
+            arrivalPiece = s.querySelector(".piece")
+        }
+        p.draggable = false
+        p.src = `/img/chesspieces/${piece}.png`
+        p.className = "piece"
+        p.dataset.pieceType = piece.split("")[0] == "w" ? piece.split("")[1].toUpperCase() : piece.split("")[1].toLowerCase()
+        p.onclick = function(){
+                    setTimeout(()=>{
+                        showLegalMoves(`${square}`)
+                    },10)
+            }
+            if(arrivalPiece){
+            arrivalPiece.remove()
+        }
+        s.appendChild(p)
+        if(explosion){
+            playSound("/sounds/wither_spawn.mp3")
+            createExplosion(square)
+        }
+    }
+    function makeBoard(){
+        const pieces = fenToPos()
+        position = pieces
+        for(square in pieces){
+            if(pieces[square]){
+            createPiece(square, pieces[square])
+            }
+        }
+        for(let i = 0; i < document.getElementsByClassName("square").length; i++){
+            const square = document.getElementsByClassName("square").item(i)
+            square.addEventListener("contextmenu",(event)=>{
+                event.preventDefault()
+                if(square.className.includes("selected")){
+                    square.classList.remove("selected")
+                }
+                else{
+                    square.classList.add("selected")
+                }
+            })
+            square.addEventListener("click",()=>{
+                const point = square.querySelector(".point")
+                if(point){
+                    const from = point.dataset.move.split("-")[0]
+                    const to = point.dataset.move.split("-")[1]
+                    if(to.endsWith("8") && chess.get(from)?.type === "p"){
+                        makePromotion(from, to)
+                    }
+                    else{
+                        let move = chess.move({from :from, to : to})
+                        if(move.san.includes("+")){
+                            playSound("/sounds/move-check.mp3")
+                        }
+                        else if(move.captured){
+                            playSound("/sounds/capture.mp3")
+                        }
+                        else if(move.san.includes("O-")){
+                            playSound("/sounds/castle.mp3")
+                        }
+                        else playSound("/sounds/move-self.mp3")
+                        if(chess.game_over()){
+                            playSound("/sounds/game-end.mp3")
+                        }
+                        moves.push(move.san)
+                        setTimeout(()=>{
+                            if(isAIPlaying && !isGameEnded) socket.emit(`movePlayed`,socket.id, moves.toString())
+                        },500)
+                    }
+                    movePiece(from, to)
+                }
+            })
+        }
+    }
+
+    // SCRIPT
+    document.getElementById("board").addEventListener("click",()=>{
+        setTimeout(()=>{
+            removePoints() 
+        },5)
+        for(let i = 0; i < document.getElementsByClassName("square").length; i++){
+            const square = document.getElementsByClassName("square").item(i)
+            if(square.className.includes("selected")){
+                square.classList.remove("selected")
+            }
+        }
+            })
+            socket.on("connect",()=>{
+        socket.on(`movePlayedReturn`,(id, move)=>{ // Reception of AI move
+            console.log(move)
+            if(id == socket.id){
+                let m = chess.move(move)
+                if(move.includes("+")){
+                    playSound("/sounds/move-check.mp3")
+                }
+                        else if(move.includes("x")){
+                            playSound("/sounds/capture.mp3")
+                        }
+                        else if(move.includes("O-")){
+                            playSound("/sounds/castle.mp3")
+                        }
+                        else playSound("/sounds/move.mp3")
+                        if(chess.game_over() || move.includes("#")){
+                            playSound("/sounds/game-end.mp3")
+                        }
+                moves.push(move)
+                if(!m){
+                    let piece = (move.toLowerCase() == move || move.includes("=")) ? "p" : move.split("")[0].toLowerCase()
+                    const cleanMove = move.split("#")[0].split("+")[0]
+                    let squareDest = (cleanMove.includes("=")) ? `${cleanMove.split("")[0]}${cleanMove.split("")[1]}` : `${cleanMove.split("").at(-2)}${cleanMove.split("").at(-1)}`
+                    if(cleanMove == "O-O" || cleanMove == "0-0"){
+                        squareDest = "g8"
+                        piece = "k"
+                    }
+                    if(cleanMove == "O-O-O" || cleanMove == "0-0-0"){
+                        squareDest = "c8"
+                        piece = "k"
+                    }
+                    const closestOccurence = findClosestOccurence(squareDest, piece)
+                    if(move.endsWith("#")){
+                        isGameEnded = true
+                        makeResult("b", "échec et mat (autoproclamé)")
+                    }
+                    if(closestOccurence){
+                        movePiece(closestOccurence, squareDest, "teleport")
+                        setTimeout(()=>{
+                            chess.load(boardToFen(chess.turn(), chess.fen().split(" ")[2]))
+                        },600)
+                    }
+                    else{
+                        createPiece(squareDest, `b${piece.toUpperCase()}`, true)
+                        setTimeout(()=>{
+                            chess.load(boardToFen(chess.turn(), chess.fen().split(" ")[2]))
+                        },600)
+                    }
+                }
+                else{
+                movePiece(m.from, m.to)
+                }
+            }
+        })
+    })
+    document.getElementById("copy_moves").addEventListener("click",()=>{
+        navigator.clipboard.writeText(movesToPGN(moves))
+        showInfo("PGN copié dans le presse-papier")
+    })
+    </script>
+</body>
+</html>
