@@ -752,7 +752,7 @@
             console.log(move)
             if(id == socket.id){
                 let m = chess.move(move)
-                if(move.includes("+")){
+                if(move.includes("+") || chess.in_check()){
                     playSound("/sounds/move-check.mp3")
                 }
                         else if(move.includes("x")){
@@ -779,7 +779,7 @@
                         piece = "k"
                     }
                     const closestOccurence = findClosestOccurence(squareDest, piece)
-                    if(move.endsWith("#")){
+                    if(move.includes("#")){
                         isGameEnded = true
                         makeResult("b", "échec et mat (autoproclamé)")
                     }
