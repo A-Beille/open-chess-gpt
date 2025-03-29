@@ -938,7 +938,7 @@
     // Drag
     window.onmousemove = function(e){mouseX = event.clientX; mouseY = event.clientY}
     setInterval(()=>{
-        if(draggedPiece){
+        if(draggedPiece && !window.mobileCheck()){
             const square = document.getElementById(`square_${draggedPiece}`)
             if(square.querySelector(".piece")){
                 const piece = square.querySelector(".piece")
