@@ -152,7 +152,7 @@
     let draggedPiece = ""
     let position = {}
     let moves = []
-    const isAIPlaying = true // If disabled, the game works like any chess game
+    const isAIPlaying = false // If disabled, the game works like any chess game
     let isGameEnded = false
     let mouseX = 0
     let mouseY = 0
@@ -619,7 +619,10 @@
         if(fromSquareId == "e8" && toSquareId == "c8" && piece.src.includes("bK")){ // Castle quenside B
             movePiece("a8", "d8", null, true)
         }
-        piece.onmousedown = function(){
+        piece.onmousedown = function(evt){
+            evt = evt || window.event;
+            if("buttons" in evt) return;
+            if(evt.buttons != 1) return
                     setTimeout(()=>{
                         piece.style.zIndex = 4
                         if(showLegalMoves(`${toSquareId}`)){
@@ -749,7 +752,10 @@
         p.src = `/img/chesspieces/${piece}.png`
         p.className = "piece"
         p.dataset.pieceType = piece.split("")[0] == "w" ? piece.split("")[1].toUpperCase() : piece.split("")[1].toLowerCase()
-        p.onmousedown = function(){
+        p.onmousedown = function(evt){
+            evt = evt || window.event;
+            if("buttons" in evt) return;
+            if(evt.buttons != 1) return
                     setTimeout(()=>{
                         p.style.zIndex = 4
                         if(showLegalMoves(`${square}`)){
@@ -817,7 +823,7 @@
         }
         for(let i = 0; i < document.getElementsByClassName("square").length; i++){
             const square = document.getElementsByClassName("square").item(i)
-            square.addEventListener("contextmenu",(event)=>{
+            square.oncontextmenu = function(event){
                 event.preventDefault()
                 if(square.className.includes("selected")){
                     square.classList.remove("selected")
@@ -825,8 +831,11 @@
                 else{
                     square.classList.add("selected")
                 }
-            })
-            square.addEventListener("mousedown",()=>{
+            }
+            square.addEventListener("mousedown",(evt)=>{
+                evt = evt || window.event;
+            if("buttons" in evt) return;
+            if(evt.buttons != 1) return
                 const point = square.querySelector(".point")
                 if(point){
                     const from = point.dataset.move.split("-")[0]
@@ -868,7 +877,10 @@
             document.getElementsByClassName("row").item(i).style.height = "10.5vw"
         }
     }
-    document.getElementById("board").addEventListener("mousedown",()=>{
+    document.getElementById("board").addEventListener("mousedown",(evt)=>{
+        evt = evt || window.event;
+        if("buttons" in evt){
+            if(evt.buttons == 1){
         setTimeout(()=>{
             removePoints() 
         },5)
@@ -878,6 +890,8 @@
                 square.classList.remove("selected")
             }
         }
+    }
+}
             })
             socket.on("connect",()=>{
         socket.on(`movePlayedReturn`,(id, move)=>{ // Reception of AI move
