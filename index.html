@@ -897,6 +897,8 @@
         socket.on(`movePlayedReturn`,(id, move)=>{ // Reception of AI move
             if(id == socket.id){
                 let m = chess.move(move)
+                if(move == "0-0") move = "O-O"
+                if(move == "0-0-0") move = "O-O-O"
                 if(move.includes("+") || chess.in_check()){
                     playSound("/sounds/move-check.mp3")
                 }
