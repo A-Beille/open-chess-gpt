@@ -745,7 +745,7 @@
         document.getElementById("board").style.height = "84vw"
         document.getElementById("board").style.width = "84vw"
         for(let i = 0; i < document.getElementsByClassName("row").length; i++){
-            document.getElementsByClassName("row").item(i) = "10.5vw"
+            document.getElementsByClassName("row").item(i).style.height = "10.5vw"
         }
     }
     document.getElementById("board").addEventListener("click",()=>{
