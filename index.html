@@ -149,10 +149,13 @@
     <script>
     // FUNCTIONS & DEFINITIONS
     
+    let draggedPiece = ""
     let position = {}
     let moves = []
-    const isAIPlaying = true // If disabled, the game works like any chess game
+    const isAIPlaying = false // If disabled, the game works like any chess game
     let isGameEnded = false
+    let mouseX = 0
+    let mouseY = 0
     var socket = io();
     const chess = new Chess();
     window.mobileCheck = function() {
@@ -408,12 +411,16 @@
         if((chess.turn() == "b" && isAIPlaying) || isGameEnded) return;
         const square = document.getElementById(`square_${piece_square}`)
         const piece = square.querySelector(".piece")
+        let isLegalMove = false
         if(piece){
+            removePoints()
             const legalMoves = chess.moves({verbose: true}).filter(move => move.from == piece_square)
             legalMoves.forEach((move)=>{
+                isLegalMove = true
                 drawPoint(move.from, move.to)
             })
         }
+        return isLegalMove
     }
     function createExplosion(square) {
         canvas.style.zIndex = 10
@@ -527,7 +534,7 @@
         return finalPosition
     }
 
-    function movePiece(fromSquareId, toSquareId, transition, noKingCheck) {
+    function movePiece(fromSquareId, toSquareId, transition, noKingCheck, fromDrag) {
     // Get the source and destination squares
     const fromSquare = document.getElementById(`square_${fromSquareId}`);
     const toSquare = document.getElementById(`square_${toSquareId}`);
@@ -558,6 +565,7 @@
     // Compute movement offsets
     const deltaX = toRect.left - fromRect.left - 30;
     const deltaY = toRect.top - fromRect.top - 30;
+    if(!fromDrag){
     if(transition == "teleport"){
     // Teleportation
     playSound("/sounds/teleport.mp3")
@@ -569,8 +577,19 @@
     piece.style.transition = "transform 0.3s ease-out";
     piece.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
     }
+}
     // Wait for the animation to complete before re-parenting the piece
     setTimeout(() => {
+        if(fromDrag){
+            toSquare.appendChild(piece)
+            piece.style.zIndex = 3
+            piece.style.position = "absolute"
+            piece.style.left = "50%"
+            piece.style.top = "50%"
+            piece.style.height = "100%"
+            piece.style.transform = "translate(-50%, -50%)"
+        }
+        else{
         if(transition == "teleport"){
                 toSquare.appendChild(piece); // Move piece to the new square
                 piece.style.height = "0%"
@@ -587,6 +606,7 @@
         piece.style.transform = "translate(-50%, -50%)"; // Reset transform
         toSquare.appendChild(piece); // Move piece to the new square
         }
+    }
         if(fromSquareId == "e1" && toSquareId == "g1" && piece.src.includes("wK")){ // Castle kingside W
             movePiece("h1", "f1", null, true)
         }
@@ -599,10 +619,54 @@
         if(fromSquareId == "e8" && toSquareId == "c8" && piece.src.includes("bK")){ // Castle quenside B
             movePiece("a8", "d8", null, true)
         }
-        piece.onclick = function(){
+        piece.onmousedown = function(){
                     setTimeout(()=>{
-                        showLegalMoves(`${toSquareId}`)
+                        piece.style.zIndex = 4
+                        if(showLegalMoves(`${toSquareId}`)){
+                            draggedPiece = toSquareId
+                        }
                     },10)
+            }
+            piece.onmouseup = function(){
+                draggedPiece = null
+                const touchedPoint = isTouchingPoint(piece)
+                if(touchedPoint){
+                    removePoints()
+                    const from = touchedPoint.dataset.move.split("-")[0]
+                    const to = touchedPoint.dataset.move.split("-")[1]
+                    if(to.endsWith("8") && chess.get(from)?.type === "p"){
+                        makePromotion(from, to)
+                    }
+                    else{
+                        let move = chess.move({from :from, to : to})
+                        if(move.san.includes("+")){
+                            playSound("/sounds/move-check.mp3")
+                        }
+                        else if(move.captured){
+                            playSound("/sounds/capture.mp3")
+                        }
+                        else if(move.san.includes("O-")){
+                            playSound("/sounds/castle.mp3")
+                        }
+                        else playSound("/sounds/move-self.mp3")
+                        if(chess.game_over()){
+                            playSound("/sounds/game-end.mp3")
+                        }
+                        moves.push(move.san)
+                        setTimeout(()=>{
+                            if(isAIPlaying && !isGameEnded) socket.emit(`movePlayed`,socket.id, moves.toString())
+                        },500)
+                    }
+                    movePiece(from, to, null, false, true)
+                }
+                setTimeout(()=>{
+                piece.style.zIndex = 3
+                piece.style.position = "absolute"
+                piece.style.left = "50%"
+                piece.style.top = "50%"
+                piece.style.height = "100%"
+                piece.style.transform = "translate(-50%, -50%)"
+                },50)
             }
         if(arrivalPiece){
             let noRemove = false
@@ -646,12 +710,24 @@
                 makeResult("draw", "la règle des 50 coups")  
             }
         }
-    }, 300); // Match timeout with transition duration
+    }, (fromDrag ? 10 : 300)); // Match timeout with transition duration
 }
+    function isTouchingPoint(piece){ // TAKES A DOM ELEMENT
+        for(let i = 0; i < document.getElementsByClassName("point").length; i++){
+        const point = document.getElementsByClassName("point").item(i)
+        const rect1 = piece.getBoundingClientRect(); 
+        const rect2 = point.getBoundingClientRect();
+        const horizontalTouch = rect1.right >= rect2.left && rect1.left <= rect2.right; 
+        const verticalTouch = rect1.bottom >= rect2.top && rect1.top <= rect2.bottom; 
+        if (horizontalTouch && verticalTouch) {
+        return document.getElementsByClassName("point").item(i)
+    }
+    }
+    }
     function drawPoint(from, square){
         const s = document.getElementById(`square_${square}`)
         const point = document.createElement("div")
-        point.className = "point"
+        point.className = `${s.querySelector(".piece") ? "point capture_point" : "point"}`
         point.dataset.move = `${from}-${square}`
         s.appendChild(point)
     }
@@ -673,10 +749,54 @@
         p.src = `/img/chesspieces/${piece}.png`
         p.className = "piece"
         p.dataset.pieceType = piece.split("")[0] == "w" ? piece.split("")[1].toUpperCase() : piece.split("")[1].toLowerCase()
-        p.onclick = function(){
+        p.onmousedown = function(){
                     setTimeout(()=>{
-                        showLegalMoves(`${square}`)
+                        p.style.zIndex = 4
+                        if(showLegalMoves(`${square}`)){
+                            draggedPiece = square
+                        }
                     },10)
+            }
+            p.onmouseup = function(){
+                draggedPiece = null
+                const touchedPoint = isTouchingPoint(p)
+                if(touchedPoint){
+                    removePoints()
+                    const from = touchedPoint.dataset.move.split("-")[0]
+                    const to = touchedPoint.dataset.move.split("-")[1]
+                    if(to.endsWith("8") && chess.get(from)?.type === "p"){
+                        makePromotion(from, to)
+                    }
+                    else{
+                        let move = chess.move({from :from, to : to})
+                        if(move.san.includes("+")){
+                            playSound("/sounds/move-check.mp3")
+                        }
+                        else if(move.captured){
+                            playSound("/sounds/capture.mp3")
+                        }
+                        else if(move.san.includes("O-")){
+                            playSound("/sounds/castle.mp3")
+                        }
+                        else playSound("/sounds/move-self.mp3")
+                        if(chess.game_over()){
+                            playSound("/sounds/game-end.mp3")
+                        }
+                        moves.push(move.san)
+                        setTimeout(()=>{
+                            if(isAIPlaying && !isGameEnded) socket.emit(`movePlayed`,socket.id, moves.toString())
+                        },500)
+                    }
+                    movePiece(from, to, null, false, true)
+                }
+                setTimeout(()=>{
+                p.style.zIndex = 3
+                p.style.position = "absolute"
+                p.style.left = "50%"
+                p.style.top = "50%"
+                p.style.height = "100%"
+                p.style.transform = "translate(-50%, -50%)"
+                },50)
             }
             if(arrivalPiece){
             arrivalPiece.remove()
@@ -706,7 +826,7 @@
                     square.classList.add("selected")
                 }
             })
-            square.addEventListener("click",()=>{
+            square.addEventListener("mousedown",()=>{
                 const point = square.querySelector(".point")
                 if(point){
                     const from = point.dataset.move.split("-")[0]
@@ -748,7 +868,7 @@
             document.getElementsByClassName("row").item(i).style.height = "10.5vw"
         }
     }
-    document.getElementById("board").addEventListener("click",()=>{
+    document.getElementById("board").addEventListener("mousedown",()=>{
         setTimeout(()=>{
             removePoints() 
         },5)
@@ -761,7 +881,6 @@
             })
             socket.on("connect",()=>{
         socket.on(`movePlayedReturn`,(id, move)=>{ // Reception of AI move
-            console.log(move)
             if(id == socket.id){
                 let m = chess.move(move)
                 if(move.includes("+") || chess.in_check()){
@@ -816,6 +935,27 @@
         navigator.clipboard.writeText(movesToPGN(moves))
         showInfo("PGN copié dans le presse-papier")
     })
+    // Drag
+    window.onmousemove = function(e){mouseX = event.clientX; mouseY = event.clientY}
+    setInterval(()=>{
+        if(draggedPiece){
+            const square = document.getElementById(`square_${draggedPiece}`)
+            if(square.querySelector(".piece")){
+                const piece = square.querySelector(".piece")
+                const boardRect = document.getElementById("board").getBoundingClientRect()
+                const pieceHeight = getComputedStyle(piece).height
+                piece.style.position = "fixed"
+                piece.style.height = pieceHeight
+                piece.style.transform = ""
+                if(mouseX - boardRect.x > 0 && mouseX - boardRect.x < boardRect.width){
+                piece.style.left = `${mouseX - boardRect.x}px`
+                }
+                if(mouseY > boardRect.y && mouseY < boardRect.height + 50){
+                piece.style.top = `${mouseY - 50}px`
+                }
+            }
+        }
+    },5)
     </script>
 </body>
 </html>
