@@ -19,6 +19,7 @@ body{
     background-color: rgb(85, 85, 108);
 }
 #board{
+    user-select: none;
     z-index: 5;
     height: 84vh;
     width: 84vh;
@@ -70,6 +71,14 @@ body{
 .sb > .point {
     background-color: var(--global_dark_black);
 }
+.sw > .capture_point {
+    background: none !important;
+    border-color: var(--global_dark_white);
+}
+.sb > .capture_point {
+    background: none !important;
+    border-color: var(--global_dark_black);
+}
 #square_a8{
     border-top-left-radius: 10px; /*Fits the border radius of board*/
 }
@@ -84,17 +93,29 @@ body{
 }
 .piece{
     cursor: pointer;
-    z-index: 2;
+    z-index: 3;
     height: 100%;
     position: absolute;
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    user-select: none;
 }
 .point{
-    z-index: 3;
+    z-index: 2;
     height: 40%;
     width: 40%;
+    border-radius: 100%;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+}
+.capture_point{
+    z-index: 2;
+    border: solid 5px;
+    height: 80%;
+    width: 80%;
     border-radius: 100%;
     position: absolute;
     left: 50%;
