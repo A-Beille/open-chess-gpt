@@ -621,7 +621,7 @@
         }
         piece.onmousedown = function(evt){
             evt = evt || window.event;
-            if("buttons" in evt) return;
+            if(!("buttons" in evt)) return;
             if(evt.buttons != 1) return
                     setTimeout(()=>{
                         piece.style.zIndex = 4
@@ -754,7 +754,7 @@
         p.dataset.pieceType = piece.split("")[0] == "w" ? piece.split("")[1].toUpperCase() : piece.split("")[1].toLowerCase()
         p.onmousedown = function(evt){
             evt = evt || window.event;
-            if("buttons" in evt) return;
+            if(!("buttons" in evt)) return;
             if(evt.buttons != 1) return
                     setTimeout(()=>{
                         p.style.zIndex = 4
@@ -834,7 +834,7 @@
             }
             square.addEventListener("mousedown",(evt)=>{
                 evt = evt || window.event;
-            if("buttons" in evt) return;
+            if(!("buttons" in evt)) return;
             if(evt.buttons != 1) return
                 const point = square.querySelector(".point")
                 if(point){
